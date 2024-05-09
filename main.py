@@ -49,8 +49,8 @@ def get_random_verb_conjugation(mood: str, use_irregular: bool, use_vosotros: bo
     tenses_list = [tense.strip().capitalize() for tense in tenses.split(',')]
     filtered_for_tense_df = filtered_for_mood_df[filtered_for_mood_df['tense_english'].isin(tenses_list)]
 
-    # Drop tense columns after using them to filter
-    filtered_for_tense_df.drop(['tense', 'tense_english'], axis='columns', inplace=True)
+    # Drop tense column after using it to filter
+    filtered_for_tense_df.drop(['tense'], axis='columns', inplace=True)
 
     # Choose a verb at random from the list
     random_verb_index = random.randint(1, len(filtered_for_tense_df)) - 1
@@ -59,12 +59,18 @@ def get_random_verb_conjugation(mood: str, use_irregular: bool, use_vosotros: bo
     if use_vosotros:
         random_form_index = random.randint(1, 6) - 1
         forms = ['yo', 'tú', 'él/ella/usted', 'nosotros/as', 'vosotros/as', 'ellos/ellas/ustedes']
-        filtered_for_form_df = random_verb_df[['infinitive', 'infinitive_english', forms[random_form_index]]]
+        filtered_for_form_df = random_verb_df[
+            ['infinitive', 'infinitive_english', 'tense_english', forms[random_form_index]]]
+        filtered_for_form_df.rename(columns={forms[random_form_index]: 'translation'}, inplace=True)
+        filtered_for_form_df['form'] = forms[random_form_index]
     else:
         random_verb_df.drop(['vosotros/as'], axis='columns', inplace=True)
         random_form_index = random.randint(1, 5) - 1
         forms = ['yo', 'tú', 'él/ella/usted', 'nosotros/as', 'ellos/ellas/ustedes']
-        filtered_for_form_df = random_verb_df[['infinitive', 'infinitive_english', forms[random_form_index]]]
+        filtered_for_form_df = random_verb_df[
+            ['infinitive', 'infinitive_english', 'tense_english', forms[random_form_index]]]
+        filtered_for_form_df.rename(columns={forms[random_form_index]: 'translation'}, inplace=True)
+        filtered_for_form_df['form'] = forms[random_form_index]
 
     final_json = json.loads(filtered_for_form_df.to_json(orient='records'))
     return final_json
@@ -72,4 +78,5 @@ def get_random_verb_conjugation(mood: str, use_irregular: bool, use_vosotros: bo
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="127.0.0.1", port=8000)
