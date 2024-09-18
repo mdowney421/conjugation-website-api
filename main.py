@@ -23,7 +23,7 @@ app.add_middleware(
 @app.get("/get-all-verbs")
 def get_all_verbs():
     df = pd.read_csv('./conjugations.csv')
-    verbs_list = df[['infinitive', 'infinitive_english']].drop_duplicates().values.tolist()
+    verbs_list = df[['infinitive_spanish', 'infinitive_english']].drop_duplicates().values.tolist()
     verbs_list.sort()
     return verbs_list
 
@@ -32,47 +32,55 @@ def get_all_verbs():
 def get_random_verb_conjugation(mood: str, use_irregular: bool, use_vosotros: bool, tenses: str = Query(...)):
     all_verbs_df = pd.read_csv("./conjugations.csv")
 
-    all_verbs_df.rename({'form_1s': 'yo', 'form_2s': 'tú', 'form_3s': 'él/ella/usted', 'form_1p': 'nosotros/as',
-                         'form_2p': 'vosotros/as', 'form_3p': 'ellos/ellas/ustedes'}, axis='columns', inplace=True)
+    # # Drop unnecessary columns
+    # all_verbs_df.drop([
+    #     'gerund_spanish',
+    #     'gerund_english',
+    #     'past_participle_spanish',
+    #     'past_participle_english'
+    # ], axis='columns', inplace=True)
 
-    # Drop unnecessary columns
-    all_verbs_df.drop(['verb_english', 'gerund', 'gerund_english', 'pastparticiple', 'pastparticiple_english'],
-                      axis='columns', inplace=True)
-
-    # Filter the data frame for chosen mood(s)
-    filtered_for_mood_df = all_verbs_df[all_verbs_df['mood_english'] == mood.capitalize()]
-
-    # Drop mood columns after using them to filter
-    filtered_for_mood_df.drop(['mood', 'mood_english'], axis='columns', inplace=True)
+    # Filter the data frame for the chosen mood(s)
+    all_verbs_df = all_verbs_df[all_verbs_df['mood_english'] == mood]
 
     # Filter the data frame for chosen tense(s)
-    tenses_list = [tense.strip().capitalize() for tense in tenses.split(',')]
-    filtered_for_tense_df = filtered_for_mood_df[filtered_for_mood_df['tense_english'].isin(tenses_list)]
-
-    # Drop tense column after using it to filter
-    filtered_for_tense_df.drop(['tense'], axis='columns', inplace=True)
+    tenses_list = [tense.strip() for tense in tenses.split(',')]
+    all_verbs_df = all_verbs_df[all_verbs_df['tense_english'].isin(tenses_list)]
 
     # Choose a verb at random from the list
-    random_verb_index = random.randint(1, len(filtered_for_tense_df)) - 1
-    random_verb_df = filtered_for_tense_df.iloc[[random_verb_index]]
+    random_verb_index = random.randint(1, len(all_verbs_df)) - 1
+    all_verbs_df = all_verbs_df.iloc[[random_verb_index]]
 
     if use_vosotros:
-        random_form_index = random.randint(1, 6) - 1
-        forms = ['yo', 'tú', 'él/ella/usted', 'nosotros/as', 'vosotros/as', 'ellos/ellas/ustedes']
-        filtered_for_form_df = random_verb_df[
-            ['infinitive', 'infinitive_english', 'tense_english', forms[random_form_index]]]
-        filtered_for_form_df.rename(columns={forms[random_form_index]: 'translation'}, inplace=True)
-        filtered_for_form_df['form'] = forms[random_form_index]
+        random_form = random.choice(['form_1ps', 'form_2ps', 'form_3ps', 'form_1pp', 'form_2pp', 'form_3pp'])
+        all_verbs_df = all_verbs_df[[
+            'infinitive_spanish',
+            'infinitive_english',
+            'mood_spanish',
+            'mood_english',
+            'tense_english',
+            'tense_spanish',
+            random_form + '_spanish',
+            random_form + '_english']]
+        all_verbs_df = all_verbs_df.rename(
+            columns={random_form + '_spanish': 'form_spanish', random_form + '_english': 'form_english'}
+        )
     else:
-        random_verb_df.drop(['vosotros/as'], axis='columns', inplace=True)
-        random_form_index = random.randint(1, 5) - 1
-        forms = ['yo', 'tú', 'él/ella/usted', 'nosotros/as', 'ellos/ellas/ustedes']
-        filtered_for_form_df = random_verb_df[
-            ['infinitive', 'infinitive_english', 'tense_english', forms[random_form_index]]]
-        filtered_for_form_df.rename(columns={forms[random_form_index]: 'translation'}, inplace=True)
-        filtered_for_form_df['form'] = forms[random_form_index]
+        random_form = random.choice(['form_1ps', 'form_2ps', 'form_3ps', 'form_1pp', 'form_3pp'])
+        all_verbs_df = all_verbs_df[[
+            'infinitive_spanish',
+            'infinitive_english',
+            'mood_spanish',
+            'mood_english',
+            'tense_english',
+            'tense_spanish',
+            random_form + '_spanish',
+            random_form + '_english']]
+        all_verbs_df = all_verbs_df.rename(
+            columns={random_form + '_spanish': 'form_spanish', random_form + '_english': 'form_english'}
+        )
 
-    final_json = json.loads(filtered_for_form_df.to_json(orient='records'))
+    final_json = json.loads(all_verbs_df.to_json(orient='records'))
     return final_json
 
 
